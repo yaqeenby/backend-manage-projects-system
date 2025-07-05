@@ -62,7 +62,7 @@ export class TasksService {
       title: dto.title,
       description: dto.description,
       status: dto.status,
-      project: { id: dto.projectId } as Project,
+      // project: { id: dto.projectId } as Project,
       assignedTo: { id: dto.assignedToUserId } as User,
       updatedBy: currentUser?.userId
     })

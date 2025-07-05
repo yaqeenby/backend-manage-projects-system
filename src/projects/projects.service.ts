@@ -41,9 +41,18 @@ export class ProjectsService {
   }
 
   async update(id: string, dto: UpdateProjectDto, currentUser: AuthUser): Promise<Project> {
-    await this.projectValidator.validate(dto);
-
+    //prevevnt edit this data (based on requirments)
     var project = await this.projectRepo.findOneByOrFail({ id });
+
+    dto.departmentsIds = undefined;
+    dto.organizationId = undefined;
+
+    await this.projectValidator.validate({
+      ...dto,
+      organizationId: project.organization?.id
+    });
+
+
 
     if (dto.name) {
       const existing = await this.projectRepo.findOne({where: { name: dto.name, id: Not(id) }});
@@ -55,13 +64,13 @@ export class ProjectsService {
 
     if (dto.description) project.description = dto.description;
 
-    if(dto.departmentsIds && dto.departmentsIds.length > 0) {
-      project = Object.assign(project, { departments: dto.departmentsIds?.map(d => ({id: d} as Department)) });
-    }
+    // if(dto.departmentsIds && dto.departmentsIds.length > 0) {
+    //   project = Object.assign(project, { departments: dto.departmentsIds?.map(d => ({id: d} as Department)) });
+    // }
 
-    if(dto.organizationId) {
-      project = Object.assign(project, { organization: {id: dto.organizationId} as Organization });
-    }
+    // if(dto.organizationId) {
+    //   project = Object.assign(project, { organization: {id: dto.organizationId} as Organization });
+    // }
 
     if(dto.managerId) {
       project = Object.assign(project, { manager: {id: dto.managerId} as User });

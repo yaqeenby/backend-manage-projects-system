@@ -38,11 +38,13 @@ export class DepartmentService {
     const department = await this.departmentRepo.findOneByOrFail({ id });
     department.name = dto.name;
 
+    dto.organizationId = department.organization.id;
+
     await this.departmentValidator.validate(dto);
     
-    if (dto.organizationId) {
-      department.organizationId = dto.organizationId;
-    }
+    // if (dto.organizationId) {
+    //   department.organizationId = dto.organizationId;
+    // }
     
     department.updatedBy = currentUser.userId;
 
