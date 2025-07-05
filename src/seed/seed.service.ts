@@ -10,6 +10,7 @@ import { User } from '../users/user.entity';
 import { ProjectStatus } from '../projects/enums/project-status.enum';
 import { Role } from '../roles/role.entity';
 import * as bcrypt from 'bcrypt';
+import { SEED_SCALE } from '../config/constants';
 
 @Injectable()
 export class SeedService {
@@ -44,8 +45,7 @@ export class SeedService {
     const employeeRole = await this.roleRepo.findOne({ where: { name: 'Employee' }});
     const hashedPassword =  await bcrypt.hash('P@ssw0rd!@#', 10);
 
-    // Departments (around 100)
-    const deptCount = 100;
+    const deptCount = this.scaleCount(100);
 
     for (let i = 1; i <= deptCount; i++) {
       const dept = this.deptRepo.create({
@@ -81,7 +81,7 @@ export class SeedService {
     await this.userRepo.save(employee);
 
       // Projects per department (random 50 to 80)
-      const projectCount = this.randomInt(50, 80);
+      const projectCount = this.scaleCount(this.randomInt(50, 80));
 
       for (let j = 1; j <= projectCount; j++) {
         const project = this.projectRepo.create({
@@ -96,7 +96,7 @@ export class SeedService {
         await this.projectRepo.save(project);
 
         // Tasks per project (random 100 to 200)
-        const taskCount = this.randomInt(100, 200);
+        const taskCount = this.scaleCount(this.randomInt(100, 200));
 
         // Insert tasks in batches for performance
         const tasksBatch: any[] = [];
@@ -134,4 +134,9 @@ export class SeedService {
     const daysToAdd = this.randomInt(1, 90);
     return new Date(today.getTime() + daysToAdd * 24 * 60 * 60 * 1000);
   }
+
+  private scaleCount(base: number): number {
+   return Math.floor(base * SEED_SCALE);
+ }
+
 }
