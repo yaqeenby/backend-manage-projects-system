@@ -44,21 +44,18 @@ export class SeedService {
     const deptCount = this.scaleCount(100);
     const departments: Department[] = [];
     let tasks: Task[] = [];
+    let managers: User[] = [];
+    let employees: User[] = [];
 
-    // Step 1: Create Departments
     for (let i = 1; i <= deptCount; i++) {
-      departments.push(this.deptRepo.create({
+      let dept = this.deptRepo.create({
         name: `Department ${i}`,
         organization: org,
-      }));
-    }
-    await this.deptRepo.save(departments, { chunk: 100 });
+      });
 
-    // Step 2: Create Users, Projects and Tasks
-    for (let i = 1; i <= deptCount; i++) {
-      const dept = departments[i - 1];
+      departments.push(dept);
 
-      const manager = this.userRepo.create({
+      managers.push(this.userRepo.create({
         fullName: `Manager User ${dept.name} ${i}`,
         email: `manager@${dept.name + i}.com`,
         phone: `+96277809999${i}`,
@@ -66,9 +63,9 @@ export class SeedService {
         organization: org,
         password: hashedPassword,
         departments: [dept],
-      });
+      }));
 
-      const employee = this.userRepo.create({
+      employees.push(this.userRepo.create({
         fullName: `Employee User ${dept.name} ${i}`,
         email: `employee@${dept.name + i}.com`,
         phone: `+96277808888${i}`,
@@ -76,11 +73,39 @@ export class SeedService {
         organization: org,
         password: hashedPassword,
         departments: [dept],
-      });
+      }));
+    }
 
-      await this.userRepo.insert([manager, employee]);
+    await this.deptRepo.save(departments, { chunk: 100 });
+    await this.userRepo.save([...managers, ...employees], { chunk: 100 });
 
-      // Step 3: Create and Save Projects per Department
+    for (let i = 1; i <= deptCount; i++) {
+      const dept = departments[i - 1];
+      const manager = managers[i - 1];
+      const employee = employees[i - 1];
+
+      // const manager = this.userRepo.create({
+      //   fullName: `Manager User ${dept.name} ${i}`,
+      //   email: `manager@${dept.name + i}.com`,
+      //   phone: `+96277809999${i}`,
+      //   role: managerRole as Role,
+      //   organization: org,
+      //   password: hashedPassword,
+      //   departments: [dept],
+      // });
+
+      // const employee = this.userRepo.create({
+      //   fullName: `Employee User ${dept.name} ${i}`,
+      //   email: `employee@${dept.name + i}.com`,
+      //   phone: `+96277808888${i}`,
+      //   role: employeeRole as Role,
+      //   organization: org,
+      //   password: hashedPassword,
+      //   departments: [dept],
+      // });
+
+      // await this.userRepo.insert([manager, employee]);
+
       const projectCount = this.scaleCount(this.randomInt(50, 80));
       const deptProjects: Project[] = [];
 
