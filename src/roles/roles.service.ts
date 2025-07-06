@@ -18,7 +18,6 @@ async createRole(name: string, permissions: Permission[]): Promise<Role> {
   if (!role) {
     role = this.roleRepo.create({ name, permissions });
   } else {
-    // حدث الأذونات للدور حتى لو موجود
     role.permissions = permissions;
   }
   

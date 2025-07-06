@@ -16,7 +16,7 @@ export const AppDataSource = new DataSource({
   username: process.env.DB_USERNAME || 'postgres',
   password: process.env.DB_PASSWORD || 'postgres',
   database: process.env.DB_NAME || 'hierarchy_db',
-  entities: [User, Role, Permission, Department, Task, Project, Organization, Notification],  // <-- Glob pattern here
+  entities: [User, Role, Permission, Department, Task, Project, Organization, Notification], 
   migrations: [__dirname + '/src/migrations/*.ts'],
   synchronize: false,
 });

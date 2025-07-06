@@ -148,7 +148,6 @@ export class AppModule implements OnApplicationBootstrap {
 
     const existingAdmin = await this.usersService.findByEmail('admin@test.com');
     if (!existingAdmin) {
-      // هنا لازم تجيب دور Admin من قاعدة البيانات - مثال:
       const adminRole = await this.rolesService.getRoleByName('Admin');
 
       if (!adminRole) {

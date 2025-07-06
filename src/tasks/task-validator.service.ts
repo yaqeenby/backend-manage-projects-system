@@ -29,7 +29,7 @@ export class TaskValidatorService {
     // 2. Validate Project
     const project = await this.projectRepo.findOne({
       where: { id: dto.projectId },
-      relations: ['organization'], // عشان نعرف لأي منظمة تابع
+      relations: ['organization'], 
     });
     if (!project) {
       errors.push('Invalid projectId');
