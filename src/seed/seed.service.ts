@@ -34,93 +34,102 @@ export class SeedService {
   async generate() {
     this.logger.log('Seeding data started...');
 
-    // 1 Organization
-    const org = this.orgRepo.create({
-      name: 'My Organization',
-    });
-
+    const org = this.orgRepo.create({ name: 'My Organization' });
     await this.orgRepo.save(org);
 
-    const managerRole = await this.roleRepo.findOne({ where: { name: 'Manager' }});
-    const employeeRole = await this.roleRepo.findOne({ where: { name: 'Employee' }});
-    const hashedPassword =  await bcrypt.hash('P@ssw0rd!@#', 10);
+    const managerRole = await this.roleRepo.findOne({ where: { name: 'Manager' } });
+    const employeeRole = await this.roleRepo.findOne({ where: { name: 'Employee' } });
+    const hashedPassword = await bcrypt.hash('P@ssw0rd!@#', 10);
 
     const deptCount = this.scaleCount(100);
+    const departments: Department[] = [];
+    let tasks: Task[] = [];
 
+    // Step 1: Create Departments
     for (let i = 1; i <= deptCount; i++) {
-      const dept = this.deptRepo.create({
+      departments.push(this.deptRepo.create({
         name: `Department ${i}`,
         organization: org,
-      });
+      }));
+    }
+    await this.deptRepo.save(departments, { chunk: 100 });
 
-      await this.deptRepo.save(dept);
+    // Step 2: Create Users, Projects and Tasks
+    for (let i = 1; i <= deptCount; i++) {
+      const dept = departments[i - 1];
 
-    const manager = this.userRepo.create({
+      const manager = this.userRepo.create({
         fullName: `Manager User ${dept.name} ${i}`,
         email: `manager@${dept.name + i}.com`,
         phone: `+96277809999${i}`,
-        role: managerRole ?? {name: 'Manager'},
+        role: managerRole as Role,
         organization: org,
         password: hashedPassword,
-        departments: [dept]
-    });
+        departments: [dept],
+      });
 
-    await this.userRepo.save(manager);
-
-
-    const employee = this.userRepo.create({
+      const employee = this.userRepo.create({
         fullName: `Employee User ${dept.name} ${i}`,
         email: `employee@${dept.name + i}.com`,
         phone: `+96277808888${i}`,
-        role: employeeRole ?? {name: 'Employee'},
+        role: employeeRole as Role,
         organization: org,
         password: hashedPassword,
-        departments: [dept]
-    });
+        departments: [dept],
+      });
 
-    await this.userRepo.save(employee);
+      await this.userRepo.insert([manager, employee]);
 
-      // Projects per department (random 50 to 80)
+      // Step 3: Create and Save Projects per Department
       const projectCount = this.scaleCount(this.randomInt(50, 80));
+      const deptProjects: Project[] = [];
 
       for (let j = 1; j <= projectCount; j++) {
-        const project = this.projectRepo.create({
+        deptProjects.push(this.projectRepo.create({
           name: `Project ${j} of Dept ${i}`,
           departments: [dept],
           description: `Description for Project ${j} in Department ${i}`,
           status: ProjectStatus.OPEN,
           organization: org,
-          manager: manager
-        });
+          manager: manager,
+        }));
+      }
 
-        await this.projectRepo.save(project);
+      const savedProjects = await this.projectRepo.save(deptProjects, { chunk: 100 });
 
-        // Tasks per project (random 100 to 200)
+      for (let j = 0; j < savedProjects.length; j++) {
+        const project = savedProjects[j];
         const taskCount = this.scaleCount(this.randomInt(100, 200));
 
-        // Insert tasks in batches for performance
-        const tasksBatch: any[] = [];
         for (let k = 1; k <= taskCount; k++) {
-          let task = await this.taskRepo.create({
-            title: `Task ${k} of Project ${j} in Dept ${i}`,
+          tasks.push(this.taskRepo.create({
+            title: `Task ${k} of Project ${j + 1} in Dept ${i}`,
             description: `Description for Task ${k} in Department ${i}`,
             project: project,
-            status: TaskStatus.TODO, 
+            status: TaskStatus.TODO,
             startDate: new Date(),
             endDate: this.randomFutureDate(),
             assignedTo: employee,
-            department: dept
-          });
-
-          tasksBatch.push(task);
+            department: dept,
+          }));
         }
-        await this.taskRepo.save(tasksBatch);
+        
+        if(tasks.length >= 1000) {
+           await this.taskRepo.save(tasks, { chunk: 1000 });
+           tasks = [];
+        }
 
-        this.logger.log(`Seeded ${taskCount} tasks for Project ${j} of Department ${i}`);
+        this.logger.log(`Seeded ${taskCount} tasks for Project ${j + 1} of Department ${i}`);
       }
 
       this.logger.log(`Seeded ${projectCount} projects for Department ${i}`);
     }
+
+    this.logger.log('Seeded last tasks.');
+    if(tasks && tasks.length > 0) {
+      await this.taskRepo.save(tasks, { chunk: 1000 });
+    }
+
 
     this.logger.log('Seeding data completed.');
   }
@@ -136,7 +145,6 @@ export class SeedService {
   }
 
   private scaleCount(base: number): number {
-   return Math.floor(base * SEED_SCALE);
- }
-
+    return Math.floor(base * SEED_SCALE);
+  }
 }
